@@ -1,5 +1,8 @@
 # Component Index
 
+migrations (migrations)
+└── FS [var embed.FS] (migrations.go)
+
 main (cmd/api)
 ├── Config [struct] (config.go)
 │   └── Validate (Validate() error)
@@ -11,10 +14,17 @@ main (cmd/api)
 └── main [func] (main.go)
 
 platform (internal/platform)
+├── MigrateUp [func] (migrate.go)
 ├── NewPool [func] (db.go)
+├── TestMigrateUp_CreatesSchema [func] (migrate_test.go)
+├── TestMigrateUp_NoChangeIsNil [func] (migrate_test.go)
+├── TestMigrateUp_UpDownReversible [func] (migrate_test.go)
 ├── TestNewPool_ContextCancelled [func] (db_test.go)
 ├── TestNewPool_InvalidDSN [func] (db_test.go)
 ├── TestNewPool_ReachableDB [func] (db_test.go)
 ├── TestNewPool_UnreachableDB [func] (db_test.go)
+├── openDB [func] (migrate_test.go)
+├── queryStrings [func] (migrate_test.go)
+├── startPostgres [func] (migrate_test.go)
 └── testLogger [func] (db_test.go)
 

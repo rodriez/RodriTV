@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS process_logs;
+DROP TABLE IF EXISTS uptime_samples;
+DROP TABLE IF EXISTS config;
+DROP TABLE IF EXISTS channels;
