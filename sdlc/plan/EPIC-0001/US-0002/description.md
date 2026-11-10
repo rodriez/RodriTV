@@ -13,7 +13,7 @@ US-0001
 CRUD completo de canales con sources embebidas (5 slots) persistido en `channels`, con validaciones de dominio y tests de integración reales. Aún sin rutas HTTP (código muerto temporal hasta US-0003).
 
 ## Checklist:
-- [ ] T-0006: Modelar entidades y errores de dominio en `internal/channel/entity.go` y `source.go` [NUEVO]
+- [x] T-0006: Modelar entidades y errores de dominio en `internal/channel/entity.go` y `source.go` [NUEVO]
 - [ ] T-0007: Definir la interfaz `Repository` en `internal/channel/gateways.go` [NUEVO]
 - [ ] T-0008: Escribir queries sqlc de canales en `scripts/sqlc/channel.sql` y generar código [NUEVO]
 - [ ] T-0009: Implementar `Repository` PostgreSQL en `internal/channel/postgres.go` [NUEVO]
