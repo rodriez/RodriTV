@@ -39,9 +39,9 @@ type validationError interface {
 
 // NewServer arma el http.Server sobre un ServeMux con las rutas registradas,
 // envuelto por el middleware compuesto: requestID -> logging -> recoverPanic.
-func NewServer(cfg Config, log *slog.Logger, pool Pinger) *http.Server {
+func NewServer(cfg Config, log *slog.Logger, pool Pinger, logos http.Handler) *http.Server {
 	mux := http.NewServeMux()
-	registerRoutes(mux, pool, log)
+	registerRoutes(mux, pool, logos, log)
 
 	handler := requestID(logging(log)(recoverPanic(log)(mux)))
 

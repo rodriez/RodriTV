@@ -45,7 +45,7 @@ func run() int {
 		return 1
 	}
 
-	srv := NewServer(cfg, log, pool)
+	srv := NewServer(cfg, log, pool, nil)
 
 	log.Info("server starting", "port", cfg.Port)
 	if err := runServer(ctx, srv, cfg.ShutdownTimeout, log); err != nil {
