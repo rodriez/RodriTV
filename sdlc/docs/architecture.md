@@ -2,7 +2,7 @@
 
 - Fecha de generación: 2026-11-10
 - Alcance: repositorio `github.com/rodriez/RodriTV` (módulo `cmd/api`)
-- Última actualización: se agrega el servidor HTTP en `cmd/api` (T-0004, US-0001): `NewServer` con middleware `requestID`/`logging`/`recoverPanic`, mapeo uniforme de errores (`writeError`) y `GET /healthz` (`registerRoutes`/`healthz`, interfaz `Pinger`).
+- Última actualización: se compone el ciclo de vida del binario en `cmd/api/main.go` (T-0005, US-0001): `main`/`run` (config → logger → pool → migraciones → server, exit code 0/1), `newLogger`/`parseLogLevel` (slog JSON con nivel de config) y `runServer` (arranque en goroutine + `signal.NotifyContext` SIGINT/SIGTERM + `Shutdown` con `ShutdownTimeout`).
 
 ## System Context
 
@@ -48,7 +48,9 @@ C4Component
     title Component — cmd/api
 
     Component(config, "Config / LoadConfig", "Go, Viper", "Carga y valida la configuración desde variables de entorno RODRITV_API_*")
-    Component(main, "main", "Go", "Punto de entrada (stub, pendiente de composición en T-0005)")
+    Component(main, "main / run", "Go", "Composición y ciclo de vida: config -> logger -> pool -> migraciones -> server; devuelve exit code 0/1")
+    Component(lifecycle, "runServer", "Go, os/signal", "Arranca el server en goroutine; signal.NotifyContext(SIGINT, SIGTERM) -> Shutdown drenando conexiones dentro de ShutdownTimeout")
+    Component(logcfg, "newLogger / parseLogLevel", "Go, log/slog", "Logger JSON a stdout con el nivel de config (debug/info/warn/error; default info)")
     Component(server, "NewServer", "Go, net/http", "Arma el http.Server (ReadHeaderTimeout 5s) con middleware requestID -> logging -> recoverPanic")
     Component(routes, "registerRoutes / healthz", "Go, net/http ServeMux", "Registra GET /healthz: Ping a la DB -> 200 {\"status\":\"ok\"} o 503")
     Component(werr, "writeError / writeJSON", "Go, encoding/json", "Mapeo uniforme de errores: validation 400, not_found 404, conflict 409, resto 500")
@@ -57,8 +59,12 @@ C4Component
     Component(migrateup, "MigrateUp (internal/platform)", "Go, golang-migrate/v4", "Aplica las migraciones pendientes; ignora ErrNoChange")
     ContainerDb(pgdb, "PostgreSQL", "Base de datos relacional")
 
-    Rel(main, config, "Cargará y validará config al arrancar", "llamada directa (planificado)")
-    Rel(main, server, "Construirá y arrancará el servidor en T-0005", "llamada directa (planificado)")
+    Rel(main, config, "Carga y valida config al arrancar (LoadConfig)", "llamada directa")
+    Rel(main, logcfg, "Construye el logger slog JSON", "llamada directa")
+    Rel(main, dbpool, "Crea el pool con retry (NewPool)", "llamada directa")
+    Rel(main, migrateup, "Aplica migraciones (MigrateUp); si falla, exit 1", "llamada directa")
+    Rel(main, server, "Construye el servidor (NewServer)", "llamada directa")
+    Rel(main, lifecycle, "Delega arranque y shutdown (runServer)", "llamada directa")
     Rel(server, routes, "Registra rutas en el ServeMux", "llamada directa")
     Rel(routes, pgdb, "Ping de salud via interfaz Pinger", "pgx/PostgreSQL wire protocol")
     Rel(dbpool, pgdb, "Ping con retry hasta 30s", "pgx/PostgreSQL wire protocol")
@@ -69,7 +75,9 @@ C4Component
 | Componente | Responsabilidad | Tecnología | Interacciones |
 |---|---|---|---|
 | Config / LoadConfig (cmd/api/config.go) | Struct de configuración y carga con Viper: defaults (`PORT=9291`, `DATA_DIR=/data`, `LOG_LEVEL=info`, `SHUTDOWN_TIMEOUT=10s`), `AutomaticEnv` con prefijo `RODRITV_API`, validación fail-fast (`Validate`) | Go, spf13/viper | Variables de entorno del proceso |
-| main (cmd/api/main.go) | Punto de entrada del binario; stub vacío hasta T-0005 | Go stdlib | — |
+| main / run (cmd/api/main.go) | Composición del binario: `LoadConfig` → logger slog JSON → `platform.NewPool` → `platform.MigrateUp` (error ≠ `ErrNoChange` → exit 1) → `NewServer` → `runServer`; inyección manual de dependencias, sin frameworks DI | Go stdlib, os/signal | orquesta todos los componentes; devuelve exit code 0/1 |
+| runServer (cmd/api/main.go) | Arranca `ListenAndServe` en goroutine; `signal.NotifyContext(SIGINT, SIGTERM)` dispara `Shutdown` drenando conexiones en vuelo dentro de `ShutdownTimeout`; errores de arranque se propagan | Go, net/http, os/signal | señales del SO → graceful shutdown |
+| newLogger / parseLogLevel (cmd/api/main.go) | Logger `slog` JSON a stdout con el nivel de `Config.LogLevel` (desconocido → info) | Go, log/slog | usado por toda la cadena de middleware y handlers |
 | NewServer (cmd/api/server.go) | Construye el `http.Server` (ReadHeader 5s, Read 10s, Write 30s, Idle 120s) sobre el ServeMux envuelto en middleware: `requestID` (genera/propaga `X-Request-ID`), `logging` (slog JSON con `request_id`, `method`, `path`, `status`, `duration_ms`), `recoverPanic` (panic → 500 uniforme + stack en log) | Go, net/http, log/slog, google/uuid | compone `registerRoutes` |
 | registerRoutes / healthz (cmd/api/routes.go) | Registra `GET /healthz`: ejecuta `Ping` (timeout 2s) contra la interfaz `Pinger` (la satisface `*pgxpool.Pool`); 200 `{"status":"ok"}` o 503 `{"status":"unavailable"}` | Go, net/http ServeMux | pgx Ping → PostgreSQL |
 | writeError / writeJSON (cmd/api/server.go) | Mapeo uniforme de errores con `errors.Is/As`: validación → 400 `validation` (con `fields`), `not_found` → 404, `conflict` → 409, resto → 500 `internal` (sin filtrar el mensaje interno). JSON siempre `application/json; charset=utf-8` | Go, encoding/json | consumido por todos los handlers |
@@ -81,4 +89,3 @@ C4Component
 
 - La interacción con fuentes externas proviene del PRD/RFC; aún no existe código de ingesta.
 - Los errores de dominio reales (`ErrNotFound`, `ErrConflict`, `ErrValidation`) llegan en US-0002; `writeError` ya tiene el switch `errors.Is/As` con placeholders provisionales en `cmd/api/server.go`.
-- La composición del ciclo de vida (arranque + graceful shutdown) llega en T-0005.
