@@ -2,7 +2,7 @@
 
 - Fecha de generación: 2026-11-10
 - Alcance: repositorio `github.com/rodriez/RodriTV` (módulo `cmd/api`)
-- Última actualización: se agrega el paquete de dominio `internal/channel` (T-0006, US-0002): entidades `Channel` y `Source` con invariantes (`Validate`), constructor `NewChannel` y errores de dominio (`ErrNotFound`, `ErrConflict`, `ErrValidation`). Sin relaciones aún (código de dominio puro, sin consumidores hasta T-0007+).
+- Última actualización: se agrega la interfaz `Repository` en `internal/channel/gateways.go` (T-0007, US-0002): contrato de persistencia del dominio channel (`List`, `GetByID`, `Create`, `Update`, `Delete`, `ExistsNumber`) con errores documentados (`ErrNotFound`/`ErrConflict`). Sin implementación ni consumidores aún (hasta T-0009/T-0010).
 
 ## System Context
 
@@ -58,6 +58,7 @@ C4Component
     Component(migfs, "FS (migrations)", "Go, embed", "Migraciones SQL embebidas (000001_init up/down, SPECS-004.6)")
     Component(migrateup, "MigrateUp (internal/platform)", "Go, golang-migrate/v4", "Aplica las migraciones pendientes; ignora ErrNoChange")
     Component(domain, "Channel / Source (internal/channel)", "Go", "Dominio de canales: entidades con invariantes (Validate), NewChannel, errores ErrNotFound/ErrConflict/ErrValidation")
+    Component(repo, "Repository (internal/channel)", "Go interface", "Contrato de persistencia definido por el dominio: List, GetByID, Create, Update, Delete, ExistsNumber; errores ErrNotFound/ErrConflict")
     ContainerDb(pgdb, "PostgreSQL", "Base de datos relacional")
 
     Rel(main, config, "Carga y valida config al arrancar (LoadConfig)", "llamada directa")
@@ -85,7 +86,8 @@ C4Component
 | NewPool (internal/platform/db.go) | Pool pgx con `MinConns=2`/`MaxConns=10`; `Ping` con backoff exponencial (inicio 250ms, ×2, tope 5s) hasta 30s; devuelve error si se agota el tiempo o se cancela el contexto | Go, jackc/pgx/v5 pgxpool, log/slog | pgx → PostgreSQL |
 | FS (migrations/migrations.go) | `embed.FS` con las migraciones SQL (`000001_init.up.sql` / `000001_init.down.sql`, DDL de SPECS-004.6) | Go, embed | leído por `MigrateUp` vía iofs |
 | MigrateUp (internal/platform/migrate.go) | Aplica todas las migraciones pendientes del FS embebido; ignora `migrate.ErrNoChange` (retorna nil), propaga el resto de errores | Go, golang-migrate/migrate/v4 (iofs + postgres) | DDL → PostgreSQL |
-| Channel / Source (internal/channel/entity.go, source.go) | Dominio de canales: `Channel` (5 slots fijos de `*Source`, serialización JSON con nulls) y `Source` con invariantes en `Validate` (`Number`>0, `Name` 1–100, `SegmentSeconds` 2–10, `ScheduleURL` http(s) opcional, `Slot` 1–5 = posición, `URL` http(s)); `NewChannel` aplica defaults (habilitado, `SegmentSeconds=5`). Errores: sentinelas `ErrNotFound`/`ErrConflict` y tipado `ErrValidation{Field, Msg}` (con `ValidationFields()` para el mapeo HTTP) | Go, google/uuid | sin dependencias ni consumidores aún (hasta T-0007+) |
+| Channel / Source (internal/channel/entity.go, source.go) | Dominio de canales: `Channel` (5 slots fijos de `*Source`, serialización JSON con nulls) y `Source` con invariantes en `Validate` (`Number`>0, `Name` 1–100, `SegmentSeconds` 2–10, `ScheduleURL` http(s) opcional, `Slot` 1–5 = posición, `URL` http(s)); `NewChannel` aplica defaults (habilitado, `SegmentSeconds=5`). Errores: sentinelas `ErrNotFound`/`ErrConflict` y tipado `ErrValidation{Field, Msg}` (con `ValidationFields()` para el mapeo HTTP) | Go, google/uuid | sin dependencias ni consumidores aún (hasta T-0010) |
+| Repository (internal/channel/gateways.go) | Interfaz de salida del dominio hacia la persistencia, definida por el consumidor: `List` (ordenada por `number`), `GetByID`, `Create`, `Update`, `Delete`, `ExistsNumber` (excluye un ID para conflicto 409). Contratos de error documentados: `ErrNotFound` en GetByID/Update/Delete, `ErrConflict` en Create/Update. Sin implementación aún (T-0008/T-0009) | Go interface, google/uuid | sin relaciones aún (solo fake en tests) |
 
 ## Notas / supuestos
 
