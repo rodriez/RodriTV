@@ -26,7 +26,7 @@ func TestLogosRoute_ServesAndValidates(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "3f6b2c1e.png"), []byte("fake-image"), 0o644))
 
 	mux := http.NewServeMux()
-	registerRoutes(mux, fakePinger{}, channel.NewFSLogoStore(dir), slog.Default())
+	registerRoutes(mux, fakePinger{}, nil, channel.NewFSLogoStore(dir), slog.Default())
 
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/v1/logos/3f6b2c1e.png", nil))
@@ -42,7 +42,7 @@ func TestLogosRoute_ServesAndValidates(t *testing.T) {
 
 func TestHealthz_OK(t *testing.T) {
 	mux := http.NewServeMux()
-	registerRoutes(mux, fakePinger{}, nil, slog.Default())
+	registerRoutes(mux, fakePinger{}, nil, nil, slog.Default())
 
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
@@ -57,7 +57,7 @@ func TestHealthz_OK(t *testing.T) {
 
 func TestHealthz_DatabaseDown(t *testing.T) {
 	mux := http.NewServeMux()
-	registerRoutes(mux, fakePinger{err: errors.New("connection refused")}, nil, slog.Default())
+	registerRoutes(mux, fakePinger{err: errors.New("connection refused")}, nil, nil, slog.Default())
 
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))

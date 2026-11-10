@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rodriez/RodriTV/internal/channel"
 	"github.com/rodriez/RodriTV/internal/platform"
 	"github.com/rodriez/RodriTV/migrations"
 )
@@ -45,7 +46,18 @@ func run() int {
 		return 1
 	}
 
-	srv := NewServer(cfg, log, pool, nil)
+	if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
+		log.Error("create data directory", "err", err)
+		return 1
+	}
+
+	repo := channel.NewPostgresRepository(pool)
+	svc := channel.NewService(repo, func() time.Time { return time.Now().UTC() })
+	logos := channel.NewFSLogoStore(cfg.DataDir)
+	svc.SetLogoStore(logos)
+	channels := channel.NewHandler(svc, writeError)
+
+	srv := NewServer(cfg, log, pool, channels, logos)
 
 	log.Info("server starting", "port", cfg.Port)
 	if err := runServer(ctx, srv, cfg.ShutdownTimeout, log); err != nil {
