@@ -2,7 +2,7 @@
 
 - Fecha de generación: 2026-11-10
 - Alcance: repositorio `github.com/rodriez/RodriTV` (módulo `cmd/api`)
-- Última actualización: se agrega el paquete `migrations` (SQL `000001_init` embebido vía `FS`) y `MigrateUp` en `internal/platform` (runner golang-migrate iofs+postgres, T-0003, US-0001).
+- Última actualización: se agrega el servidor HTTP en `cmd/api` (T-0004, US-0001): `NewServer` con middleware `requestID`/`logging`/`recoverPanic`, mapeo uniforme de errores (`writeError`) y `GET /healthz` (`registerRoutes`/`healthz`, interfaz `Pinger`).
 
 ## System Context
 
@@ -49,12 +49,18 @@ C4Component
 
     Component(config, "Config / LoadConfig", "Go, Viper", "Carga y valida la configuración desde variables de entorno RODRITV_API_*")
     Component(main, "main", "Go", "Punto de entrada (stub, pendiente de composición en T-0005)")
+    Component(server, "NewServer", "Go, net/http", "Arma el http.Server (ReadHeaderTimeout 5s) con middleware requestID -> logging -> recoverPanic")
+    Component(routes, "registerRoutes / healthz", "Go, net/http ServeMux", "Registra GET /healthz: Ping a la DB -> 200 {\"status\":\"ok\"} o 503")
+    Component(werr, "writeError / writeJSON", "Go, encoding/json", "Mapeo uniforme de errores: validation 400, not_found 404, conflict 409, resto 500")
     Component(dbpool, "NewPool (internal/platform)", "Go, pgx/v5 pgxpool", "Crea el pool de conexiones (MinConns=2, MaxConns=10) y espera al Ping con backoff exponencial (250ms x2, tope 5s, max 30s)")
     Component(migfs, "FS (migrations)", "Go, embed", "Migraciones SQL embebidas (000001_init up/down, SPECS-004.6)")
     Component(migrateup, "MigrateUp (internal/platform)", "Go, golang-migrate/v4", "Aplica las migraciones pendientes; ignora ErrNoChange")
     ContainerDb(pgdb, "PostgreSQL", "Base de datos relacional")
 
     Rel(main, config, "Cargará y validará config al arrancar", "llamada directa (planificado)")
+    Rel(main, server, "Construirá y arrancará el servidor en T-0005", "llamada directa (planificado)")
+    Rel(server, routes, "Registra rutas en el ServeMux", "llamada directa")
+    Rel(routes, pgdb, "Ping de salud via interfaz Pinger", "pgx/PostgreSQL wire protocol")
     Rel(dbpool, pgdb, "Ping con retry hasta 30s", "pgx/PostgreSQL wire protocol")
     Rel(migrateup, migfs, "Lee los .sql embebidos", "iofs source")
     Rel(migrateup, pgdb, "Aplica migraciones DDL", "golang-migrate postgres driver")
@@ -64,6 +70,9 @@ C4Component
 |---|---|---|---|
 | Config / LoadConfig (cmd/api/config.go) | Struct de configuración y carga con Viper: defaults (`PORT=9291`, `DATA_DIR=/data`, `LOG_LEVEL=info`, `SHUTDOWN_TIMEOUT=10s`), `AutomaticEnv` con prefijo `RODRITV_API`, validación fail-fast (`Validate`) | Go, spf13/viper | Variables de entorno del proceso |
 | main (cmd/api/main.go) | Punto de entrada del binario; stub vacío hasta T-0005 | Go stdlib | — |
+| NewServer (cmd/api/server.go) | Construye el `http.Server` (ReadHeader 5s, Read 10s, Write 30s, Idle 120s) sobre el ServeMux envuelto en middleware: `requestID` (genera/propaga `X-Request-ID`), `logging` (slog JSON con `request_id`, `method`, `path`, `status`, `duration_ms`), `recoverPanic` (panic → 500 uniforme + stack en log) | Go, net/http, log/slog, google/uuid | compone `registerRoutes` |
+| registerRoutes / healthz (cmd/api/routes.go) | Registra `GET /healthz`: ejecuta `Ping` (timeout 2s) contra la interfaz `Pinger` (la satisface `*pgxpool.Pool`); 200 `{"status":"ok"}` o 503 `{"status":"unavailable"}` | Go, net/http ServeMux | pgx Ping → PostgreSQL |
+| writeError / writeJSON (cmd/api/server.go) | Mapeo uniforme de errores con `errors.Is/As`: validación → 400 `validation` (con `fields`), `not_found` → 404, `conflict` → 409, resto → 500 `internal` (sin filtrar el mensaje interno). JSON siempre `application/json; charset=utf-8` | Go, encoding/json | consumido por todos los handlers |
 | NewPool (internal/platform/db.go) | Pool pgx con `MinConns=2`/`MaxConns=10`; `Ping` con backoff exponencial (inicio 250ms, ×2, tope 5s) hasta 30s; devuelve error si se agota el tiempo o se cancela el contexto | Go, jackc/pgx/v5 pgxpool, log/slog | pgx → PostgreSQL |
 | FS (migrations/migrations.go) | `embed.FS` con las migraciones SQL (`000001_init.up.sql` / `000001_init.down.sql`, DDL de SPECS-004.6) | Go, embed | leído por `MigrateUp` vía iofs |
 | MigrateUp (internal/platform/migrate.go) | Aplica todas las migraciones pendientes del FS embebido; ignora `migrate.ErrNoChange` (retorna nil), propaga el resto de errores | Go, golang-migrate/migrate/v4 (iofs + postgres) | DDL → PostgreSQL |
@@ -71,4 +80,5 @@ C4Component
 ## Notas / supuestos
 
 - La interacción con fuentes externas proviene del PRD/RFC; aún no existe código de ingesta.
-- El servidor HTTP y `/healthz` llegan en T-0004; la composición del ciclo de vida en T-0005.
+- Los errores de dominio reales (`ErrNotFound`, `ErrConflict`, `ErrValidation`) llegan en US-0002; `writeError` ya tiene el switch `errors.Is/As` con placeholders provisionales en `cmd/api/server.go`.
+- La composición del ciclo de vida (arranque + graceful shutdown) llega en T-0005.
