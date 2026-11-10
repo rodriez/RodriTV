@@ -16,5 +16,5 @@ CRUD completo de canales con sources embebidas (5 slots) persistido en `channels
 - [x] T-0006: Modelar entidades y errores de dominio en `internal/channel/entity.go` y `source.go` [NUEVO]
 - [x] T-0007: Definir la interfaz `Repository` en `internal/channel/gateways.go` [NUEVO]
 - [x] T-0008: Escribir queries sqlc de canales en `scripts/sqlc/channel.sql` y generar código [NUEVO]
-- [ ] T-0009: Implementar `Repository` PostgreSQL en `internal/channel/postgres.go` [NUEVO]
+- [x] T-0009: Implementar `Repository` PostgreSQL en `internal/channel/postgres.go` [NUEVO]
 - [ ] T-0010: Implementar `Service` de canales en `internal/channel/service.go` [NUEVO]

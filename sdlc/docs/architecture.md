@@ -2,7 +2,7 @@
 
 - Fecha de generación: 2026-11-10
 - Alcance: repositorio `github.com/rodriez/RodriTV` (módulo `cmd/api`)
-- Última actualización: se agregan las queries sqlc de canales y el código generado en `internal/channel` (T-0008, US-0002): `Queries`, `DBTX`, `ChannelRow` y modelos de las demás tablas, con `sources` como `json.RawMessage`. Aún sin repositorio PostgreSQL ni consumidores (T-0009).
+- Última actualización: se agrega `PostgresRepository` (T-0009, US-0002), implementación de `Repository` sobre las queries sqlc y `pgx`, con serialización JSONB, reloj inyectable y mapeo de errores de persistencia al dominio.
 
 ## System Context
 
@@ -59,9 +59,13 @@ C4Component
     Component(migrateup, "MigrateUp (internal/platform)", "Go, golang-migrate/v4", "Aplica las migraciones pendientes; ignora ErrNoChange")
     Component(domain, "Channel / Source (internal/channel)", "Go", "Dominio de canales: entidades con invariantes (Validate), NewChannel, errores ErrNotFound/ErrConflict/ErrValidation")
     Component(repo, "Repository (internal/channel)", "Go interface", "Contrato de persistencia definido por el dominio: List, GetByID, Create, Update, Delete, ExistsNumber; errores ErrNotFound/ErrConflict")
+    Component(pgrepo, "PostgresRepository (internal/channel)", "Go, pgx/v5, encoding/json", "Implementa Repository sobre queries sqlc; serializa sources JSONB, genera UUID/timestamps y mapea errores PostgreSQL al dominio")
     Component(sqlc, "Queries / DBTX / ChannelRow (internal/channel)", "Go generado por sqlc, pgx/v5", "Queries CRUD y ExistsChannelNumber; modelos de canales, config, logs y uptime; sources como json.RawMessage")
     ContainerDb(pgdb, "PostgreSQL", "Base de datos relacional")
 
+    Rel(pgrepo, repo, "Implementa el contrato de persistencia", "Go interface")
+    Rel(pgrepo, sqlc, "Ejecuta operaciones CRUD y ExistsChannelNumber", "llamada directa")
+    Rel(sqlc, pgdb, "Ejecuta queries de canales via DBTX/pgxpool", "pgx/PostgreSQL wire protocol")
     Rel(main, config, "Carga y valida config al arrancar (LoadConfig)", "llamada directa")
     Rel(main, logcfg, "Construye el logger slog JSON", "llamada directa")
     Rel(main, dbpool, "Crea el pool con retry (NewPool)", "llamada directa")
@@ -88,8 +92,9 @@ C4Component
 | FS (migrations/migrations.go) | `embed.FS` con las migraciones SQL (`000001_init.up.sql` / `000001_init.down.sql`, DDL de SPECS-004.6) | Go, embed | leído por `MigrateUp` vía iofs |
 | MigrateUp (internal/platform/migrate.go) | Aplica todas las migraciones pendientes del FS embebido; ignora `migrate.ErrNoChange` (retorna nil), propaga el resto de errores | Go, golang-migrate/migrate/v4 (iofs + postgres) | DDL → PostgreSQL |
 | Channel / Source (internal/channel/entity.go, source.go) | Dominio de canales: `Channel` (5 slots fijos de `*Source`, serialización JSON con nulls) y `Source` con invariantes en `Validate` (`Number`>0, `Name` 1–100, `SegmentSeconds` 2–10, `ScheduleURL` http(s) opcional, `Slot` 1–5 = posición, `URL` http(s)); `NewChannel` aplica defaults (habilitado, `SegmentSeconds=5`). Errores: sentinelas `ErrNotFound`/`ErrConflict` y tipado `ErrValidation{Field, Msg}` (con `ValidationFields()` para el mapeo HTTP) | Go, google/uuid | sin dependencias ni consumidores aún (hasta T-0010) |
-| Repository (internal/channel/gateways.go) | Interfaz de salida del dominio hacia la persistencia, definida por el consumidor: `List` (ordenada por `number`), `GetByID`, `Create`, `Update`, `Delete`, `ExistsNumber` (excluye un ID para conflicto 409). Contratos de error documentados: `ErrNotFound` en GetByID/Update/Delete, `ErrConflict` en Create/Update. Sin implementación aún (T-0009) | Go interface, google/uuid | sin relaciones aún (solo fake en tests) |
-| Queries / DBTX / ChannelRow (internal/channel) | Código generado por sqlc desde `scripts/sqlc/channel.sql`: operaciones CRUD, `ExistsChannelNumber`, modelos de tablas y abstracción `DBTX` compatible con pgx; `ChannelRow` evita colisión con la entidad `Channel` | Go, sqlc v1.30.0, pgx/v5 | sin consumidores aún (T-0009) |
+| Repository (internal/channel/gateways.go) | Interfaz de salida del dominio hacia la persistencia, definida por el consumidor: `List` (ordenada por `number`), `GetByID`, `Create`, `Update`, `Delete`, `ExistsNumber` (excluye un ID para conflicto 409). Contratos de error documentados: `ErrNotFound` en GetByID/Update/Delete, `ErrConflict` en Create/Update | Go interface, google/uuid | implementada por `PostgresRepository` |
+| PostgresRepository (internal/channel/postgres.go) | Repositorio PostgreSQL: UUID v4 y timestamps UTC con reloj inyectable; `sources` serializado como array JSONB de 5 posiciones; SQLSTATE 23505 de `number` → `ErrConflict`, no rows/0 filas → `ErrNotFound` | Go, pgx/v5, encoding/json | queries sqlc → PostgreSQL |
+| Queries / DBTX / ChannelRow (internal/channel) | Código generado por sqlc desde `scripts/sqlc/channel.sql`: operaciones CRUD, `ExistsChannelNumber`, modelos de tablas y abstracción `DBTX` compatible con pgx; `ChannelRow` evita colisión con la entidad `Channel` | Go, sqlc v1.30.0, pgx/v5 | consumido por `PostgresRepository`; pgx → PostgreSQL |
 
 ## Notas / supuestos
 

@@ -19,6 +19,7 @@ RodriTV is a TV channel aggregator capable of ingesting feeds from various sourc
 cmd/          # entry points / main packages, standard Go convention
   └── api/    # binario rodritv-api (config.go, main.go)
 internal/     # private application code, standard Go convention
+  ├── channel/  # dominio de canales, contrato Repository, queries sqlc y PostgresRepository
   └── platform/ # infraestructura compartida (db.go: pool pgx con retry; migrate.go: runner golang-migrate embebido)
 migrations/   # migraciones SQL embebidas (000001_init up/down, SPECS-004.6) exportadas como embed.FS
 scripts/sqlc/ # queries SQL usadas por sqlc para generar acceso a datos
