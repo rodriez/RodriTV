@@ -62,6 +62,7 @@ Si alguna de las tres no aplica (ej. no hubo cambios de API), indicarlo explíci
 
 ### 7. Cerrar con PR y deploy
 
+- **Commits (obligatorio):** todos los commits de la etapa se hacen SIEMPRE siguiendo la SKILL `git-commit-maker` (título `[<EPIC>|<US>|<T>]: <titulo>` y cuerpo según `.github/PULL_REQUEST_TEMPLATE.md`). No ejecutar `git commit` por fuera de esa skill.
 - Preparar el PR: rama, commits, título y descripción que referencien la T y la US, incluyendo el resumen de cambios y desviaciones.
 - Ejecutar el deploy correspondiente según el proceso del proyecto, o indicar al usuario los pasos exactos si el deploy no puede ejecutarse desde el entorno actual.
 
@@ -71,3 +72,4 @@ Si alguna de las tres no aplica (ej. no hubo cambios de API), indicarlo explíci
 - No tocar código fuera del alcance de la T salvo lo estrictamente necesario para que compile y pase tests; documentar cualquier excepción.
 - Una T por vez: no adelantar trabajo de otras T de la US.
 - Nunca dejar el build roto ni tests fallando: la T termina en estado desplegable.
+- Nunca hacer un commit sin aplicar la SKILL `git-commit-maker`: es el único formato de commits válido en este flujo.
