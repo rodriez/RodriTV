@@ -38,6 +38,16 @@ All generated/maintained technical documentation lives in `sdlc/docs/` — never
 - `sdlc/docs/component_index.md` — component inventory (regenerate with the `component-indexer` skill after code changes).
 - `sdlc/docs/architecture.md` — C4 architecture diagrams (update with the `c4-architecture-documenter` skill when components/containers/relations change).
 
+## Mandatory: consult technical documentation first
+
+Before writing, modifying, or refactoring any code, the agent MUST consult the project's technical documentation to locate components and understand the architecture:
+
+1. `sdlc/docs/component_index.md` — first source to map components (structs, interfaces, functions, methods) to their real files.
+2. `sdlc/docs/architecture.md` — C4 architecture diagrams, to understand containers, components and relations.
+3. Direct code inspection — only as a last resort, when the docs don't exist, are outdated, or raise doubts.
+
+If a component cited as existing is not found in the docs or the code, do not assume — ask the user.
+
 ## Build and test commands
 
 Standard Go toolchain:

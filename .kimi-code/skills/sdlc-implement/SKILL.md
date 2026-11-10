@@ -25,8 +25,8 @@ Flujo SDLC basado en SDD: `discovery -> define -> specify -> plan -> implement`.
 
 Fuentes de localización, **en orden de preferencia**:
 
-1. **Índice de componentes**: si el proyecto tiene un índice de componentes/clases (ej. `component_index.md` generado por `component-indexer`), consultarlo primero para mapear los componentes citados en la T a sus archivos reales.
-2. **Documentación interna** (arquitectura de código, ej. `architecture.md`) si el índice no existe o no cubre el componente.
+1. **Índice de componentes**: consultar primero `sdlc/docs/component_index.md` (generado por `component-indexer`) para mapear los componentes citados en la T a sus archivos reales.
+2. **Documentación de arquitectura**: consultar `sdlc/docs/architecture.md` (generado por `c4-architecture-documenter`) si el índice no existe o no cubre el componente, o para entender contenedores y relaciones.
 3. **Inspección directa del código**: solo como última opción, cuando las fuentes anteriores no existan, estén desactualizadas o generen duda.
 
 Si un componente citado como existente no se encuentra, no asumir: aplicar el mismo criterio del Plan — preguntar al usuario si es el mismo componente renombrado/refactorizado y cómo agregar la lógica.

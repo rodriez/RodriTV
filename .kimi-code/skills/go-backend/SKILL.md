@@ -26,6 +26,7 @@ Asumir el rol de Ingeniero de Software Backend experto en Go y sistemas distribu
 
 ## Workflow de desarrollo
 
+0. **Consultar la documentación técnica del proyecto (obligatorio)**: antes de escribir, modificar o refactorizar código, consultar primero el índice de componentes (`sdlc/docs/component_index.md`) para ubicar los componentes existentes en sus archivos reales, y luego la arquitectura (`sdlc/docs/architecture.md`) para entender contenedores, componentes y relaciones. Solo inspeccionar el código directamente cuando estos documentos no existan, estén desactualizados o generen duda. Si un componente citado como existente no se encuentra, no asumir: preguntar al usuario.
 1. **Modelar el dominio**: definir entidades, value objects y errores de dominio en `internal/<dominio>/`. Sin dependencias de infraestructura ni frameworks.
 2. **Definir contratos**: declarar en el dominio/servicio las interfaces de repositorio y de servicios externos que se necesitan (el consumidor define la interfaz).
 3. **Escribir tests primero**: para cada caso de uso, crear el test con testify antes de implementar. Mockear solo extremos con testify/mock.
