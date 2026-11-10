@@ -2,7 +2,7 @@
 
 - Fecha de generación: 2026-11-10
 - Alcance: repositorio `github.com/rodriez/RodriTV` (módulo `cmd/api`)
-- Última actualización: se compone el ciclo de vida del binario en `cmd/api/main.go` (T-0005, US-0001): `main`/`run` (config → logger → pool → migraciones → server, exit code 0/1), `newLogger`/`parseLogLevel` (slog JSON con nivel de config) y `runServer` (arranque en goroutine + `signal.NotifyContext` SIGINT/SIGTERM + `Shutdown` con `ShutdownTimeout`).
+- Última actualización: se agrega el paquete de dominio `internal/channel` (T-0006, US-0002): entidades `Channel` y `Source` con invariantes (`Validate`), constructor `NewChannel` y errores de dominio (`ErrNotFound`, `ErrConflict`, `ErrValidation`). Sin relaciones aún (código de dominio puro, sin consumidores hasta T-0007+).
 
 ## System Context
 
@@ -57,6 +57,7 @@ C4Component
     Component(dbpool, "NewPool (internal/platform)", "Go, pgx/v5 pgxpool", "Crea el pool de conexiones (MinConns=2, MaxConns=10) y espera al Ping con backoff exponencial (250ms x2, tope 5s, max 30s)")
     Component(migfs, "FS (migrations)", "Go, embed", "Migraciones SQL embebidas (000001_init up/down, SPECS-004.6)")
     Component(migrateup, "MigrateUp (internal/platform)", "Go, golang-migrate/v4", "Aplica las migraciones pendientes; ignora ErrNoChange")
+    Component(domain, "Channel / Source (internal/channel)", "Go", "Dominio de canales: entidades con invariantes (Validate), NewChannel, errores ErrNotFound/ErrConflict/ErrValidation")
     ContainerDb(pgdb, "PostgreSQL", "Base de datos relacional")
 
     Rel(main, config, "Carga y valida config al arrancar (LoadConfig)", "llamada directa")
@@ -84,8 +85,9 @@ C4Component
 | NewPool (internal/platform/db.go) | Pool pgx con `MinConns=2`/`MaxConns=10`; `Ping` con backoff exponencial (inicio 250ms, ×2, tope 5s) hasta 30s; devuelve error si se agota el tiempo o se cancela el contexto | Go, jackc/pgx/v5 pgxpool, log/slog | pgx → PostgreSQL |
 | FS (migrations/migrations.go) | `embed.FS` con las migraciones SQL (`000001_init.up.sql` / `000001_init.down.sql`, DDL de SPECS-004.6) | Go, embed | leído por `MigrateUp` vía iofs |
 | MigrateUp (internal/platform/migrate.go) | Aplica todas las migraciones pendientes del FS embebido; ignora `migrate.ErrNoChange` (retorna nil), propaga el resto de errores | Go, golang-migrate/migrate/v4 (iofs + postgres) | DDL → PostgreSQL |
+| Channel / Source (internal/channel/entity.go, source.go) | Dominio de canales: `Channel` (5 slots fijos de `*Source`, serialización JSON con nulls) y `Source` con invariantes en `Validate` (`Number`>0, `Name` 1–100, `SegmentSeconds` 2–10, `ScheduleURL` http(s) opcional, `Slot` 1–5 = posición, `URL` http(s)); `NewChannel` aplica defaults (habilitado, `SegmentSeconds=5`). Errores: sentinelas `ErrNotFound`/`ErrConflict` y tipado `ErrValidation{Field, Msg}` (con `ValidationFields()` para el mapeo HTTP) | Go, google/uuid | sin dependencias ni consumidores aún (hasta T-0007+) |
 
 ## Notas / supuestos
 
 - La interacción con fuentes externas proviene del PRD/RFC; aún no existe código de ingesta.
-- Los errores de dominio reales (`ErrNotFound`, `ErrConflict`, `ErrValidation`) llegan en US-0002; `writeError` ya tiene el switch `errors.Is/As` con placeholders provisionales en `cmd/api/server.go`.
+- Los errores de dominio (`ErrNotFound`, `ErrConflict`, `ErrValidation`) ya existen en `internal/channel/entity.go` (T-0006); `writeError` aún usa placeholders provisionales en `cmd/api/server.go` hasta que lleguen los handlers (US-0003).
