@@ -2,7 +2,7 @@
 
 - Fecha de generación: 2026-11-10
 - Alcance: repositorio `github.com/rodriez/RodriTV` (módulo `cmd/api`)
-- Última actualización: se agrega `Service` (T-0010, US-0002), con validación, normalización, control de conflictos, generación de identidad de sources y eliminación opcional de logos mediante `LogoStore`.
+- Última actualización: se cablea el transporte HTTP del dominio channel (T-0013, US-0003): `Handler` REST registrado en `registerRoutes`, `FSLogoStore` para serving/borrado de logos, inyección de dependencias completa en `main.go` y mapeo de errores de dominio real en `writeError`.
 
 ## System Context
 
@@ -52,8 +52,10 @@ C4Component
     Component(lifecycle, "runServer", "Go, os/signal", "Arranca el server en goroutine; signal.NotifyContext(SIGINT, SIGTERM) -> Shutdown drenando conexiones dentro de ShutdownTimeout")
     Component(logcfg, "newLogger / parseLogLevel", "Go, log/slog", "Logger JSON a stdout con el nivel de config (debug/info/warn/error; default info)")
     Component(server, "NewServer", "Go, net/http", "Arma el http.Server (ReadHeaderTimeout 5s) con middleware requestID -> logging -> recoverPanic")
-    Component(routes, "registerRoutes / healthz", "Go, net/http ServeMux", "Registra GET /healthz: Ping a la DB -> 200 {\"status\":\"ok\"} o 503")
-    Component(werr, "writeError / writeJSON", "Go, encoding/json", "Mapeo uniforme de errores: validation 400, not_found 404, conflict 409, resto 500")
+    Component(routes, "registerRoutes / healthz", "Go, net/http ServeMux", "Registra GET /healthz, el CRUD /v1/channels y GET /v1/logos/{filename}")
+    Component(werr, "writeError / writeJSON", "Go, encoding/json", "Mapeo uniforme de errores: validation 400, not_found 404, conflict 409, resto 500 (sobre los errores de dominio de channel)")
+    Component(chandler, "Handler (internal/channel)", "Go, net/http", "Transporte REST de canales: List/Create/Get/Update/Delete con DTOs JSON y delegación de errores a writeErr")
+    Component(logostore, "FSLogoStore (internal/channel)", "Go, net/http, os", "Sirve GET /v1/logos/{filename} con validación anti path-traversal y borra logos al eliminar canales (interfaz LogoStore)")
     Component(dbpool, "NewPool (internal/platform)", "Go, pgx/v5 pgxpool", "Crea el pool de conexiones (MinConns=2, MaxConns=10) y espera al Ping con backoff exponencial (250ms x2, tope 5s, max 30s)")
     Component(migfs, "FS (migrations)", "Go, embed", "Migraciones SQL embebidas (000001_init up/down, SPECS-004.6)")
     Component(migrateup, "MigrateUp (internal/platform)", "Go, golang-migrate/v4", "Aplica las migraciones pendientes; ignora ErrNoChange")
@@ -73,9 +75,16 @@ C4Component
     Rel(main, logcfg, "Construye el logger slog JSON", "llamada directa")
     Rel(main, dbpool, "Crea el pool con retry (NewPool)", "llamada directa")
     Rel(main, migrateup, "Aplica migraciones (MigrateUp); si falla, exit 1", "llamada directa")
+    Rel(main, service, "Compone repo -> service -> SetLogoStore (DI manual)", "llamada directa")
+    Rel(main, chandler, "Construye el Handler con writeError", "llamada directa")
     Rel(main, server, "Construye el servidor (NewServer)", "llamada directa")
     Rel(main, lifecycle, "Delega arranque y shutdown (runServer)", "llamada directa")
     Rel(server, routes, "Registra rutas en el ServeMux", "llamada directa")
+    Rel(routes, chandler, "Despacha /v1/channels y /v1/channels/{id}", "net/http ServeMux")
+    Rel(routes, logostore, "Despacha GET /v1/logos/{filename}", "net/http ServeMux")
+    Rel(chandler, service, "Invoca los casos de uso del dominio", "llamada directa")
+    Rel(service, logostore, "Elimina el logo al borrar un canal", "Go interface LogoStore")
+    Rel(chandler, werr, "Delega el mapeo uniforme de errores", "func(http.ResponseWriter, error)")
     Rel(routes, pgdb, "Ping de salud via interfaz Pinger", "pgx/PostgreSQL wire protocol")
     Rel(dbpool, pgdb, "Ping con retry hasta 30s", "pgx/PostgreSQL wire protocol")
     Rel(migrateup, migfs, "Lee los .sql embebidos", "iofs source")
@@ -85,12 +94,14 @@ C4Component
 | Componente | Responsabilidad | Tecnología | Interacciones |
 |---|---|---|---|
 | Config / LoadConfig (cmd/api/config.go) | Struct de configuración y carga con Viper: defaults (`PORT=9291`, `DATA_DIR=/data`, `LOG_LEVEL=info`, `SHUTDOWN_TIMEOUT=10s`), `AutomaticEnv` con prefijo `RODRITV_API`, validación fail-fast (`Validate`) | Go, spf13/viper | Variables de entorno del proceso |
-| main / run (cmd/api/main.go) | Composición del binario: `LoadConfig` → logger slog JSON → `platform.NewPool` → `platform.MigrateUp` (error ≠ `ErrNoChange` → exit 1) → `NewServer` → `runServer`; inyección manual de dependencias, sin frameworks DI | Go stdlib, os/signal | orquesta todos los componentes; devuelve exit code 0/1 |
+| main / run (cmd/api/main.go) | Composición del binario: `LoadConfig` → logger slog JSON → `platform.NewPool` → `platform.MigrateUp` (error ≠ `ErrNoChange` → exit 1) → `MkdirAll(DATA_DIR)` → DI del dominio channel (`NewPostgresRepository` → `NewService` → `SetLogoStore(FSLogoStore)` → `NewHandler(svc, writeError)`) → `NewServer` → `runServer`; inyección manual de dependencias, sin frameworks DI | Go stdlib, os/signal | orquesta todos los componentes; devuelve exit code 0/1 |
 | runServer (cmd/api/main.go) | Arranca `ListenAndServe` en goroutine; `signal.NotifyContext(SIGINT, SIGTERM)` dispara `Shutdown` drenando conexiones en vuelo dentro de `ShutdownTimeout`; errores de arranque se propagan | Go, net/http, os/signal | señales del SO → graceful shutdown |
 | newLogger / parseLogLevel (cmd/api/main.go) | Logger `slog` JSON a stdout con el nivel de `Config.LogLevel` (desconocido → info) | Go, log/slog | usado por toda la cadena de middleware y handlers |
 | NewServer (cmd/api/server.go) | Construye el `http.Server` (ReadHeader 5s, Read 10s, Write 30s, Idle 120s) sobre el ServeMux envuelto en middleware: `requestID` (genera/propaga `X-Request-ID`), `logging` (slog JSON con `request_id`, `method`, `path`, `status`, `duration_ms`), `recoverPanic` (panic → 500 uniforme + stack en log) | Go, net/http, log/slog, google/uuid | compone `registerRoutes` |
-| registerRoutes / healthz (cmd/api/routes.go) | Registra `GET /healthz`: ejecuta `Ping` (timeout 2s) contra la interfaz `Pinger` (la satisface `*pgxpool.Pool`); 200 `{"status":"ok"}` o 503 `{"status":"unavailable"}` | Go, net/http ServeMux | pgx Ping → PostgreSQL |
-| writeError / writeJSON (cmd/api/server.go) | Mapeo uniforme de errores con `errors.Is/As`: validación → 400 `validation` (con `fields`), `not_found` → 404, `conflict` → 409, resto → 500 `internal` (sin filtrar el mensaje interno). JSON siempre `application/json; charset=utf-8` | Go, encoding/json | consumido por todos los handlers |
+| registerRoutes / healthz (cmd/api/routes.go) | Registra `GET /healthz` (`Ping` con timeout 2s contra la interfaz `Pinger`; 200 `{"status":"ok"}` o 503) y, si se inyectan, las rutas de canales (`GET/POST /v1/channels`, `GET/PUT/DELETE /v1/channels/{id}`) y `GET /v1/logos/{filename}` | Go, net/http ServeMux | Handler de canales; FSLogoStore; pgx Ping → PostgreSQL |
+| Handler (internal/channel/handler.go) | Transporte REST del dominio de canales: parsea `{id}` (UUID inválido → 400), decodifica el body JSON y delega en `Service`; errores al mapeo uniforme inyectado (`writeErr`). Respuestas: 200 list/get/update, 201 create, 204 delete | Go, net/http, encoding/json, google/uuid | `Service` → casos de uso |
+| FSLogoStore (internal/channel/logo.go) | Almacén de logos confinado a `DATA_DIR`: sirve imágenes (png/jpg/jpeg/webp/svg) con validación anti path-traversal (400 validation, 404 not_found, cuerpo uniforme) y borra logos de forma idempotente al eliminar canales | Go, net/http, os, regexp | filesystem local; satisface `http.Handler` y `LogoStore` |
+| writeError / writeJSON (cmd/api/server.go) | Mapeo uniforme de errores con `errors.Is/As` sobre los errores reales del dominio channel: `ErrValidation` → 400 `validation` (con `fields`), `ErrNotFound` → 404, `ErrConflict` → 409, resto → 500 `internal` (sin filtrar el mensaje interno). JSON siempre `application/json; charset=utf-8` | Go, encoding/json | consumido por todos los handlers |
 | NewPool (internal/platform/db.go) | Pool pgx con `MinConns=2`/`MaxConns=10`; `Ping` con backoff exponencial (inicio 250ms, ×2, tope 5s) hasta 30s; devuelve error si se agota el tiempo o se cancela el contexto | Go, jackc/pgx/v5 pgxpool, log/slog | pgx → PostgreSQL |
 | FS (migrations/migrations.go) | `embed.FS` con las migraciones SQL (`000001_init.up.sql` / `000001_init.down.sql`, DDL de SPECS-004.6) | Go, embed | leído por `MigrateUp` vía iofs |
 | MigrateUp (internal/platform/migrate.go) | Aplica todas las migraciones pendientes del FS embebido; ignora `migrate.ErrNoChange` (retorna nil), propaga el resto de errores | Go, golang-migrate/migrate/v4 (iofs + postgres) | DDL → PostgreSQL |
@@ -103,4 +114,4 @@ C4Component
 ## Notas / supuestos
 
 - La interacción con fuentes externas proviene del PRD/RFC; aún no existe código de ingesta.
-- Los errores de dominio (`ErrNotFound`, `ErrConflict`, `ErrValidation`) ya existen en `internal/channel/entity.go` (T-0006); `writeError` aún usa placeholders provisionales en `cmd/api/server.go` hasta que lleguen los handlers (US-0003).
+- `writeError` ya mapea los errores reales del dominio (`channel.ErrNotFound`, `channel.ErrConflict`, `channel.ErrValidation`) desde T-0013; los alias `errNotFound`/`errConflict` de `cmd/api/server.go` apuntan a esos sentinelas.

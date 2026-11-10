@@ -1,0 +1,375 @@
+openapi: 3.1.0
+info:
+  title: RodriTV API
+  version: "1.0.0"
+  description: >-
+    API REST de gestión de canales de RodriTV: CRUD de canales con sus
+    fuentes de stream (5 slots fijos) y serving de logos almacenados en el
+    servidor. Todas las respuestas de error siguen el formato uniforme
+    {"error": {code, message, fields?}}.
+  license:
+    name: Ver LICENSE del repositorio
+servers:
+  - url: http://localhost:9291
+    description: Servidor local por defecto (puerto configurable vía RODRITV_API_PORT)
+tags:
+  - name: channels
+    description: Gestión de canales y sus fuentes de stream
+  - name: logos
+    description: Serving de logos de canales
+
+paths:
+  /v1/channels:
+    get:
+      tags: [channels]
+      operationId: listChannels
+      summary: Lista todos los canales ordenados por número
+      responses:
+        "200":
+          description: Lista de canales (vacía si no hay ninguno)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [channels]
+                properties:
+                  channels:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Channel"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [channels]
+      operationId: createChannel
+      summary: Crea un canal
+      description: >-
+        Aplica defaults de dominio: el canal queda habilitado y
+        segment_seconds toma 5 si se envía 0 o se omite. A cada fuente sin id
+        se le asigna un UUID y timestamps de creación.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChannelInput"
+      responses:
+        "201":
+          description: Canal creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Channel"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "409":
+          description: Ya existe un canal con el mismo número
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error:
+                  code: conflict
+                  message: channel conflict
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/channels/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ChannelId"
+    get:
+      tags: [channels]
+      operationId: getChannelById
+      summary: Obtiene un canal por id
+      responses:
+        "200":
+          description: Canal encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Channel"
+        "400":
+          $ref: "#/components/responses/InvalidIdError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      tags: [channels]
+      operationId: replaceChannel
+      summary: Reemplaza completamente un canal
+      description: >-
+        Reemplazo total: el array de sources enviado sustituye por completo al
+        anterior; las fuentes no incluidas desaparecen. Las fuentes que
+        conservan su id mantienen su identidad y created_at.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChannelInput"
+      responses:
+        "200":
+          description: Canal reemplazado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Channel"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "409":
+          description: Otro canal ya usa el mismo número
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error:
+                  code: conflict
+                  message: channel conflict
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [channels]
+      operationId: deleteChannel
+      summary: Elimina un canal y su logo asociado
+      responses:
+        "204":
+          description: Canal eliminado (sin cuerpo)
+        "400":
+          $ref: "#/components/responses/InvalidIdError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/logos/{filename}:
+    parameters:
+      - name: filename
+        in: path
+        required: true
+        description: >-
+          Nombre del archivo de logo. Solo caracteres [a-zA-Z0-9._-] y
+          extensión de imagen (png, jpg, jpeg, webp, svg); se rechaza
+          path traversal.
+        schema:
+          type: string
+          pattern: "^[a-zA-Z0-9._-]+$"
+        example: 3f6b2c1e.png
+    get:
+      tags: [logos]
+      operationId: getLogo
+      summary: Sirve el archivo de logo de un canal
+      responses:
+        "200":
+          description: Contenido binario del logo
+          content:
+            image/png: {}
+            image/jpeg: {}
+            image/webp: {}
+            image/svg+xml: {}
+        "400":
+          description: Nombre de archivo inválido o extensión no permitida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error:
+                  code: validation
+                  message: "invalid filename: extension must be one of png, jpg, jpeg, webp, svg"
+                  fields:
+                    filename: extension must be one of png, jpg, jpeg, webp, svg
+        "404":
+          description: El logo no existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error:
+                  code: not_found
+                  message: 'logo "missing.png" not found'
+
+components:
+  parameters:
+    ChannelId:
+      name: id
+      in: path
+      required: true
+      description: Identificador UUID del canal
+      schema:
+        type: string
+        format: uuid
+      example: 3f6b2c1e-9a4d-4e2f-b8a1-2c3d4e5f6a7b
+
+  schemas:
+    Source:
+      type: object
+      description: Fuente de stream asignada a un slot fijo (1-5) del canal
+      required: [id, slot, url, enabled, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slot:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Debe coincidir con la posición (1-based) dentro del array sources
+        url:
+          type: string
+          format: uri
+          description: URL http(s) del stream
+        enabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Channel:
+      type: object
+      required: [id, number, name, enabled, segment_seconds, sources, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: integer
+          minimum: 1
+          description: Número de canal, único en el sistema
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        logo:
+          type: string
+          description: Nombre de archivo del logo servido en /v1/logos/{filename}
+        schedule_url:
+          type: string
+          format: uri
+          description: URL http(s) de la grilla de programación
+        enabled:
+          type: boolean
+        segment_seconds:
+          type: integer
+          minimum: 2
+          maximum: 10
+          default: 5
+        sources:
+          type: array
+          minItems: 5
+          maxItems: 5
+          description: Array fijo de 5 posiciones; los slots vacíos son null
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/Source"
+              - type: "null"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ChannelInput:
+      type: object
+      description: Cuerpo de creación/reemplazo de un canal (id y timestamps los asigna el servidor)
+      required: [number, name, sources]
+      properties:
+        number:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        logo:
+          type: string
+        schedule_url:
+          type: string
+          format: uri
+        segment_seconds:
+          type: integer
+          minimum: 2
+          maximum: 10
+          default: 5
+        sources:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/Source"
+              - type: "null"
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [validation, not_found, conflict, internal]
+            message:
+              type: string
+            fields:
+              type: object
+              additionalProperties:
+                type: string
+              description: Presente solo en errores de validación; campo -> motivo
+
+  responses:
+    ValidationError:
+      description: Error de validación (invariantes de dominio o body inválido)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: validation
+              message: "invalid name: must be between 1 and 100 characters"
+              fields:
+                name: must be between 1 and 100 characters
+    InvalidIdError:
+      description: El parámetro {id} no es un UUID válido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: validation
+              message: "invalid id: must be a valid UUID"
+              fields:
+                id: must be a valid UUID
+    NotFoundError:
+      description: El canal no existe
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: not_found
+              message: channel not found
+    InternalError:
+      description: Error interno no expuesto al cliente
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: internal
+              message: internal server error

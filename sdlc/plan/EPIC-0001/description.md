@@ -22,7 +22,7 @@ El repositorio es greenfield (sin código Go). Todos los componentes citados son
 ## Historias de usuario (ordenadas por dependencias)
 - [x] [US-0001: Plataforma base del binario `cmd/api`](./US-0001/description.md) ✅ (completada 2026-11-10)
 - [x] [US-0002: Dominio channel: entidad, servicio y repositorio PostgreSQL](./US-0002/description.md) ✅ (completada 2026-11-10)
-- [US-0003: Transporte HTTP de canales y logos](./US-0003/description.md)
+- [x] [US-0003: Transporte HTTP de canales y logos](./US-0003/description.md) ✅ (completada 2026-11-10)
 - [US-0004: Dominio setting: configuración de comportamiento (KV tipado)](./US-0004/description.md)
 - [US-0005: Dominios metric y proclog: consultas de uptime y logs (solo lectura)](./US-0005/description.md)
 - [US-0006: Job de retención de métricas y logs (maintenance)](./US-0006/description.md)
