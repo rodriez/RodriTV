@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Estado | APPROVED |
-| PRD origen | `.sdlc/discovery/PRD.md` (APPROVED, 2026-11-09) |
+| PRD origen | `sdlc/discovery/PRD.md` (APPROVED, 2026-11-09) |
 | Rol | Software Architect |
 | Fecha | 2026-11-09 |
 | Versión | 0.8 |

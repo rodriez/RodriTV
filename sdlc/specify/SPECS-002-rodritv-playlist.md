@@ -1,6 +1,6 @@
 # SPECS-002: rodritv-playlist — Motor de streaming + servidor M3U/HLS
 
-- **RFC de origen:** RFC-001 — Motor de streaming con failover continuo para lista IPTV unificada (APPROVED, `.sdlc/define/RFC-001-streaming-engine-failover-iptv.md`)
+- **RFC de origen:** RFC-001 — Motor de streaming con failover continuo para lista IPTV unificada (APPROVED, `sdlc/define/RFC-001-streaming-engine-failover-iptv.md`)
 - **Proyecto:** `rodritv-playlist` (binario `cmd/playlist`, imagen `rodritv-playlist`, puerto **9290**)
 - **SPECS relacionadas:** SPECS-001 (rodritv-api), SPECS-003 (rodritv-web), SPECS-004 (rodritv-infra)
 - **Rol:** Tech Lead

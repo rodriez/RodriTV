@@ -1,7 +1,7 @@
 # EPIC-0002: Motor de streaming con failover continuo + servidor M3U/HLS (`rodritv-playlist`)
 
-- SPECS de origen: SPECS-002 (`.sdlc/specify/SPECS-002-rodritv-playlist.md`)
-- RFC de origen: RFC-001 (`.sdlc/define/RFC-001-streaming-engine-failover-iptv.md`)
+- SPECS de origen: SPECS-002 (`sdlc/specify/SPECS-002-rodritv-playlist.md`)
+- RFC de origen: RFC-001 (`sdlc/define/RFC-001-streaming-engine-failover-iptv.md`)
 - Roles: Tech Lead + Software Engineer
 - Fecha: 2026-11-10
 - Proyectos involucrados: `rodritv-playlist` (binario `cmd/playlist`, puerto 9290)

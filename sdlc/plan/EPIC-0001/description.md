@@ -1,6 +1,6 @@
 # EPIC-0001: API REST de gestión de canales, sources, configuración, métricas y logs
 
-- SPECS de origen: SPECS-001 (`.sdlc/specify/SPECS-001-rodritv-api.md`)
+- SPECS de origen: SPECS-001 (`sdlc/specify/SPECS-001-rodritv-api.md`)
 - RFC de origen: RFC-001
 - Roles: Tech Lead + Software Engineer
 - Fecha: 2026-11-09

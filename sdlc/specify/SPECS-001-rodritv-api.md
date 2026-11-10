@@ -1,6 +1,6 @@
 # SPECS-001: rodritv-api — API REST de gestión
 
-- **RFC de origen:** RFC-001 — Motor de streaming con failover continuo para lista IPTV unificada (APPROVED, `.sdlc/define/RFC-001-streaming-engine-failover-iptv.md`)
+- **RFC de origen:** RFC-001 — Motor de streaming con failover continuo para lista IPTV unificada (APPROVED, `sdlc/define/RFC-001-streaming-engine-failover-iptv.md`)
 - **Proyecto:** `rodritv-api` (binario `cmd/api`, imagen `rodritv-api`, puerto **9291**)
 - **SPECS relacionadas:** SPECS-002 (rodritv-playlist), SPECS-003 (rodritv-web), SPECS-004 (rodritv-infra)
 - **Rol:** Tech Lead

@@ -1,6 +1,6 @@
 # SPECS-004: rodritv-infra — Imágenes, docker-compose, volúmenes y esquema de base de datos
 
-- **RFC de origen:** RFC-001 — Motor de streaming con failover continuo para lista IPTV unificada (APPROVED, `.sdlc/define/RFC-001-streaming-engine-failover-iptv.md`)
+- **RFC de origen:** RFC-001 — Motor de streaming con failover continuo para lista IPTV unificada (APPROVED, `sdlc/define/RFC-001-streaming-engine-failover-iptv.md`)
 - **Proyecto:** `rodritv-infra` (artefactos de `deployments/` y `build/`)
 - **SPECS relacionadas:** SPECS-001 (rodritv-api), SPECS-002 (rodritv-playlist), SPECS-003 (rodritv-web)
 - **Rol:** Tech Lead

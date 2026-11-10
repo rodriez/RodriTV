@@ -23,7 +23,7 @@ web/          # (empty) intended web frontend
 deployments/  # (empty) intended deployment manifests
 docs/         # functional/user documentation (docs/funcional/)
 build/        # (empty) build artifacts / packaging
-.sdlc/        # SDLC workflow artifacts (discovery/define/specify/plan docs)
+sdlc/        # SDLC workflow artifacts (discovery/define/specify/plan docs)
   └── docs/   # generated technical documentation (see below)
 .kimi-code/   # Kimi Code CLI agent configuration and skills
 go.mod        # Go module definition
@@ -33,10 +33,10 @@ LICENSE
 
 ## Generated technical documentation
 
-All generated/maintained technical documentation lives in `.sdlc/docs/` — never at the repo root or in `docs/` (which is reserved for functional documentation):
+All generated/maintained technical documentation lives in `sdlc/docs/` — never at the repo root or in `docs/` (which is reserved for functional documentation):
 
-- `.sdlc/docs/component_index.md` — component inventory (regenerate with the `component-indexer` skill after code changes).
-- `.sdlc/docs/architecture.md` — C4 architecture diagrams (update with the `c4-architecture-documenter` skill when components/containers/relations change).
+- `sdlc/docs/component_index.md` — component inventory (regenerate with the `component-indexer` skill after code changes).
+- `sdlc/docs/architecture.md` — C4 architecture diagrams (update with the `c4-architecture-documenter` skill when components/containers/relations change).
 
 ## Build and test commands
 

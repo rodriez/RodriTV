@@ -1,7 +1,7 @@
 # EPIC-0003: Servidor del panel de control (`rodritv-web`)
 
-- SPECS de origen: SPECS-003 (`.sdlc/specify/SPECS-003-rodritv-web.md`)
-- RFC de origen: RFC-001 (`.sdlc/define/RFC-001-streaming-engine-failover-iptv.md`)
+- SPECS de origen: SPECS-003 (`sdlc/specify/SPECS-003-rodritv-web.md`)
+- RFC de origen: RFC-001 (`sdlc/define/RFC-001-streaming-engine-failover-iptv.md`)
 - Roles: Tech Lead + Software Engineer
 - Fecha: 2026-11-10
 - Proyectos involucrados: `rodritv-web` (binario `cmd/web`, puerto 9292)

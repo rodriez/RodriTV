@@ -1,7 +1,7 @@
 # EPIC-0004: Infraestructura de imágenes, compose, scripts y Makefile (`rodritv-infra`)
 
-- SPECS de origen: SPECS-004 (`.sdlc/specify/SPECS-004-rodritv-infra.md`)
-- RFC de origen: RFC-001 (`.sdlc/define/RFC-001-streaming-engine-failover-iptv.md`)
+- SPECS de origen: SPECS-004 (`sdlc/specify/SPECS-004-rodritv-infra.md`)
+- RFC de origen: RFC-001 (`sdlc/define/RFC-001-streaming-engine-failover-iptv.md`)
 - Roles: Tech Lead + Software Engineer
 - Fecha: 2026-11-10
 - Proyectos involucrados: `rodritv-infra` (artefactos de `build/`, `deployments/`, `scripts/` y raíz del repo)
