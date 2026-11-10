@@ -10,3 +10,11 @@ main (cmd/api)
 ├── TestLoadConfig_PortFromEnv [func] (config_test.go)
 └── main [func] (main.go)
 
+platform (internal/platform)
+├── NewPool [func] (db.go)
+├── TestNewPool_ContextCancelled [func] (db_test.go)
+├── TestNewPool_InvalidDSN [func] (db_test.go)
+├── TestNewPool_ReachableDB [func] (db_test.go)
+├── TestNewPool_UnreachableDB [func] (db_test.go)
+└── testLogger [func] (db_test.go)
+
