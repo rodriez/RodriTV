@@ -20,7 +20,7 @@ Ninguna gestión no-codeable detectada. Advertencia técnica: los dominios `metr
 El repositorio es greenfield (sin código Go). Todos los componentes citados son `[NUEVO]` y siguen la estructura de SPECS-001.3; no hubo nombres existentes que verificar.
 
 ## Historias de usuario (ordenadas por dependencias)
-- [US-0001: Plataforma base del binario `cmd/api`](./US-0001/description.md)
+- [x] [US-0001: Plataforma base del binario `cmd/api`](./US-0001/description.md) ✅ (completada 2026-11-10)
 - [US-0002: Dominio channel: entidad, servicio y repositorio PostgreSQL](./US-0002/description.md)
 - [US-0003: Transporte HTTP de canales y logos](./US-0003/description.md)
 - [US-0004: Dominio setting: configuración de comportamiento (KV tipado)](./US-0004/description.md)
