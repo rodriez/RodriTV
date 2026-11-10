@@ -21,6 +21,8 @@ cmd/          # entry points / main packages, standard Go convention
 internal/     # private application code, standard Go convention
   └── platform/ # infraestructura compartida (db.go: pool pgx con retry; migrate.go: runner golang-migrate embebido)
 migrations/   # migraciones SQL embebidas (000001_init up/down, SPECS-004.6) exportadas como embed.FS
+scripts/sqlc/ # queries SQL usadas por sqlc para generar acceso a datos
+sqlc.yaml     # configuración de generación Go/pgx en internal/channel
 web/          # (empty) intended web frontend
 deployments/  # (empty) intended deployment manifests
 docs/         # functional/user documentation (docs/funcional/)
