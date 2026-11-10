@@ -10,7 +10,7 @@ RodriTV is a TV channel aggregator capable of ingesting feeds from various sourc
 
 - **Language:** Go (`go 1.27.3`, see `go.mod`)
 - **Module path:** `github.com/rodriez/RodriTV`
-- **Dependencies:** `github.com/spf13/viper` (config), `github.com/stretchr/testify` (tests) — see `go.mod`.
+- **Dependencies:** `github.com/spf13/viper` (config), `github.com/jackc/pgx/v5` (PostgreSQL pool), `github.com/golang-migrate/migrate/v4` (migraciones embebidas), `github.com/stretchr/testify` + `github.com/testcontainers/testcontainers-go` (tests) — see `go.mod`.
 - Intended layout suggests a web UI (`web/`) and containerized deployment (`deployments/`), but neither exists yet.
 
 ## Repository layout
@@ -18,7 +18,9 @@ RodriTV is a TV channel aggregator capable of ingesting feeds from various sourc
 ```
 cmd/          # entry points / main packages, standard Go convention
   └── api/    # binario rodritv-api (config.go, main.go)
-internal/     # (empty) private application code, standard Go convention
+internal/     # private application code, standard Go convention
+  └── platform/ # infraestructura compartida (db.go: pool pgx con retry; migrate.go: runner golang-migrate embebido)
+migrations/   # migraciones SQL embebidas (000001_init up/down, SPECS-004.6) exportadas como embed.FS
 web/          # (empty) intended web frontend
 deployments/  # (empty) intended deployment manifests
 docs/         # functional/user documentation (docs/funcional/)
