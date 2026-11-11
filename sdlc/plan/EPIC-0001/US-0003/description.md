@@ -13,6 +13,6 @@ US-0002
 API REST de canales usable: `GET/POST /v1/channels`, `GET/PUT/DELETE /v1/channels/{id}` y `GET /v1/logos/{filename}` con formato de error uniforme.
 
 ## Checklist:
-- [ ] T-0011: Implementar `Handler` de canales en `internal/channel/handler.go` [NUEVO]
-- [ ] T-0012: Implementar almacenamiento y serving de logos (`LogoStore` + `GET /v1/logos/{filename}`) [NUEVO]
-- [ ] T-0013: Registrar rutas de canales en `cmd/api/routes.go` e inyectar dependencias en `main.go` [NUEVO]
+- [x] T-0011: Implementar `Handler` de canales en `internal/channel/handler.go` [NUEVO]
+- [x] T-0012: Implementar almacenamiento y serving de logos (`LogoStore` + `GET /v1/logos/{filename}`) [NUEVO]
+- [x] T-0013: Registrar rutas de canales en `cmd/api/routes.go` e inyectar dependencias en `main.go` [NUEVO]

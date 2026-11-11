@@ -4,7 +4,7 @@
 
 RodriTV is a TV channel aggregator capable of ingesting feeds from various sources and broadcasting them through a unified IPTV playlist (see `README.md`).
 
-**Current state:** early development. `cmd/api/` contains the start of the `rodritv-api` binary (Viper-based `Config`/`LoadConfig`, stub `main`). Update this file as real code lands.
+**Current state:** early development. `cmd/api/` compone el binario `rodritv-api` completo de la EPIC-0001/US-0001–0003: config Viper, pool pgx, migraciones embebidas, servidor HTTP con middleware, CRUD REST de canales bajo `/v1` y serving de logos. Update this file as real code lands.
 
 ## Technology stack
 
@@ -19,8 +19,9 @@ RodriTV is a TV channel aggregator capable of ingesting feeds from various sourc
 cmd/          # entry points / main packages, standard Go convention
   └── api/    # binario rodritv-api (config.go, main.go)
 internal/     # private application code, standard Go convention
-  ├── channel/  # dominio de canales, Service, contrato Repository, queries sqlc y PostgresRepository
+  ├── channel/  # dominio de canales: entidades, Service, contrato Repository, queries sqlc y PostgresRepository, Handler REST (handler.go) y FSLogoStore (logo.go)
   └── platform/ # infraestructura compartida (db.go: pool pgx con retry; migrate.go: runner golang-migrate embebido)
+api/          # contrato OpenAPI 3.1 de la API (api/openapi.yaml)
 migrations/   # migraciones SQL embebidas (000001_init up/down, SPECS-004.6) exportadas como embed.FS
 scripts/sqlc/ # queries SQL usadas por sqlc para generar acceso a datos
 sqlc.yaml     # configuración de generación Go/pgx en internal/channel

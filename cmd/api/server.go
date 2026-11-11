@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rodriez/RodriTV/internal/channel"
 )
 
 const (
@@ -22,12 +23,11 @@ const (
 
 type ctxKeyRequestID struct{}
 
-// errNotFound y errConflict son placeholders del mapeo uniforme: las
-// definiciones definitivas de los errores de dominio llegan con US-0002
-// (internal/channel) y estos casos pasarán a matchear contra ellas.
+// writeError mapea los errores de dominio de channel al formato uniforme:
+// validación -> 400, not found -> 404, conflicto -> 409.
 var (
-	errNotFound = errors.New("not found")
-	errConflict = errors.New("conflict")
+	errNotFound = channel.ErrNotFound
+	errConflict = channel.ErrConflict
 )
 
 // validationError abstrae el error tipado de validación del dominio
@@ -39,9 +39,9 @@ type validationError interface {
 
 // NewServer arma el http.Server sobre un ServeMux con las rutas registradas,
 // envuelto por el middleware compuesto: requestID -> logging -> recoverPanic.
-func NewServer(cfg Config, log *slog.Logger, pool Pinger, logos http.Handler) *http.Server {
+func NewServer(cfg Config, log *slog.Logger, pool Pinger, channels *channel.Handler, logos http.Handler) *http.Server {
 	mux := http.NewServeMux()
-	registerRoutes(mux, pool, logos, log)
+	registerRoutes(mux, pool, channels, logos, log)
 
 	handler := requestID(logging(log)(recoverPanic(log)(mux)))
 
