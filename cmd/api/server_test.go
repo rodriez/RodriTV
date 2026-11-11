@@ -175,7 +175,7 @@ func TestRecoverPanic_Returns500AndLogsStack(t *testing.T) {
 
 func TestNewServer_ChainServesHealthz(t *testing.T) {
 	var buf bytes.Buffer
-	srv := NewServer(Config{Port: 9291}, newTestLogger(&buf), fakePinger{})
+	srv := NewServer(Config{Port: 9291}, newTestLogger(&buf), fakePinger{}, nil)
 
 	rec := httptest.NewRecorder()
 	srv.Handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))

@@ -15,8 +15,14 @@ type Pinger interface {
 	Ping(ctx context.Context) error
 }
 
-func registerRoutes(mux *http.ServeMux, pool Pinger, log *slog.Logger) {
+// registerRoutes registra las rutas del ServeMux. logos es el handler de
+// GET /v1/logos/{filename} (channel.FSLogoStore); si es nil la ruta no se
+// registra — el wiring real del directorio de logos llega con T-0013.
+func registerRoutes(mux *http.ServeMux, pool Pinger, logos http.Handler, log *slog.Logger) {
 	mux.HandleFunc("GET /healthz", healthz(pool, log))
+	if logos != nil {
+		mux.Handle("GET /v1/logos/{filename}", logos)
+	}
 }
 
 func healthz(pool Pinger, log *slog.Logger) http.HandlerFunc {
