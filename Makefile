@@ -1,4 +1,4 @@
-.PHONY: init downloads mocks sql
+.PHONY: init download mocks sql install uninstall
 
 init: download mocks
 
@@ -11,3 +11,9 @@ mocks:
 
 sql:
 	sqlc generate -f scripts/db/sqlc.yaml
+
+install:
+	./scripts/setup.sh
+
+uninstall:
+	./scripts/purge.sh

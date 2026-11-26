@@ -17,6 +17,10 @@ type TvChannelRequest struct {
 func (req *TvChannelRequest) ToChannel() TvChannel {
 	signals := TvSignalSet{}
 	for i, sig := range req.Signals {
+		if i >= 5 {
+			break
+		}
+
 		signals[i].URL = sig.URL
 		signals[i].Priority = sig.Priority
 		signals[i].NeedBrowser = sig.NeedBrowser

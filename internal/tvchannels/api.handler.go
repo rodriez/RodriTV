@@ -31,9 +31,9 @@ func (h *Handler) AddChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
 	w.Header().Add("Content-Type", "applicaiton/json")
-	json.NewEncoder(w).Encode(toResponse(&createdChannel))
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(toResponse(&createdChannel))
 }
 
 func (h *Handler) GetChannelByID(w http.ResponseWriter, r *http.Request) {
@@ -46,9 +46,9 @@ func (h *Handler) GetChannelByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Add("Content-Type", "applicaiton/json")
-	json.NewEncoder(w).Encode(toResponse(&existingChannel))
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(toResponse(&existingChannel))
 }
 
 func (h *Handler) ReplaceChannel(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +60,8 @@ func (h *Handler) ReplaceChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	req.ID = r.PathValue("channel_id")
+
 	replacedChannel, err := h.service.ReplaceChannel(r.Context(), req.ToChannel())
 	if err != nil {
 		apiErr := FromError(err)
@@ -67,9 +69,9 @@ func (h *Handler) ReplaceChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Add("Content-Type", "applicaiton/json")
-	json.NewEncoder(w).Encode(toResponse(&replacedChannel))
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(toResponse(&replacedChannel))
 }
 
 func (h *Handler) DeleteChannel(w http.ResponseWriter, r *http.Request) {
@@ -82,9 +84,9 @@ func (h *Handler) DeleteChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Add("Content-Type", "applicaiton/json")
-	json.NewEncoder(w).Encode(toResponse(&deletedChannel))
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(toResponse(&deletedChannel))
 }
 
 func (h *Handler) ListChannels(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +97,7 @@ func (h *Handler) ListChannels(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Add("Content-Type", "applicaiton/json")
-	json.NewEncoder(w).Encode(toListResponse(list))
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(toListResponse(list))
 }

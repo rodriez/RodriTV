@@ -3,8 +3,10 @@ package tvchannels
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/rodriez/RodriTV/internal/sqlc"
 )
@@ -53,7 +55,9 @@ func (repo *TvChannelsStoreRepository) Create(ctx context.Context, candidate *Tv
 
 func (repo *TvChannelsStoreRepository) GetByID(ctx context.Context, id string) (TvChannel, error) {
 	resultSet, err := repo.db.GetChannelByID(ctx, id)
-	if err != nil {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return TvChannel{}, nil
+	} else if err != nil {
 		slog.Error("error trying to insert tvchannel", "id", id, "error", err.Error())
 		return TvChannel{}, ErrDBInternal
 	}
@@ -106,7 +110,9 @@ func (repo *TvChannelsStoreRepository) Delete(ctx context.Context, id string) er
 
 func (repo *TvChannelsStoreRepository) List(ctx context.Context) ([]TvChannel, error) {
 	resultSet, err := repo.db.ListChannels(ctx)
-	if err != nil {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	} else if err != nil {
 		slog.Error("error trying to get tvchannels list", "error", err.Error())
 		return nil, ErrInternal
 	}

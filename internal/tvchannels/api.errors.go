@@ -15,9 +15,8 @@ type ApiError struct {
 }
 
 func (apiErr *ApiError) write(w http.ResponseWriter) {
-	w.WriteHeader(apiErr.Status)
 	w.Header().Add("Content-Type", "applicaiton/json")
-
+	w.WriteHeader(apiErr.Status)
 	_ = json.NewEncoder(w).Encode(apiErr)
 }
 

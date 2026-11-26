@@ -2,7 +2,7 @@ CREATE TABLE channels (
     id VARCHAR PRIMARY KEY,
     name VARCHAR NOT NULL,
     list_position INT NOT NULL,
-    status VARCHAR PRIMARY KEY,
+    status VARCHAR NOT NULL,
     signals JSON NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()

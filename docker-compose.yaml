@@ -1,0 +1,35 @@
+# Install with make install, which creates the .env file this stack needs
+name: rodritv
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?run make install}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run make install}
+      POSTGRES_DB: ${POSTGRES_DB:?run make install}
+    volumes:
+      - ${RODRITV_HOME:-${HOME}/rodritv}/db:/var/lib/postgresql
+      # Runs only when the data folder is empty (first start)
+      - ./scripts/db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # -h forces TCP, which stays closed while the init scripts are running
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: build/api/Dockerfile
+    image: rodritv-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ${RODRITV_HOME:-${HOME}/rodritv}/api/.env
+    ports:
+      - "${API_BIND:-127.0.0.1}:${API_PORT:-9290}:9290"
