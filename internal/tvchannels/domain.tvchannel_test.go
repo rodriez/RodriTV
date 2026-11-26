@@ -23,9 +23,13 @@ func (s *TvChannelTestSuite) completeTvChannel() tvchannels.TvChannel {
 		Status:       tvchannels.TVChannelStatusActive,
 		Signals: tvchannels.TvSignalSet{
 			{
-				URL:         "https://www.mitelefe.com/telefe-en-vivo",
-				Priority:    1,
-				NeedBrowser: false,
+				URL:                "https://www.mitelefe.com/telefe-en-vivo",
+				Priority:           1,
+				NeedBrowser:        false,
+				NeedRefresh:        true,
+				RefreshRateSeconds: 20,
+				BufferEnabled:      true,
+				BufferSize:         30,
 			},
 			{
 				URL:         "http://45.134.141.161:2200/ARG/TELEFE_HD/index.m3u8",
@@ -90,6 +94,24 @@ func (s *TvChannelTestSuite) TestInvalidSignalPriority() {
 	err := tvchannel.Validate()
 
 	s.EqualError(err, tvchannels.ErrInvalidSignalPriority.Error())
+}
+
+func (s *TvChannelTestSuite) TestInvalidSignalRefreshRateSeconds() {
+	tvchannel := s.completeTvChannel()
+	tvchannel.Signals[0].RefreshRateSeconds = -1
+
+	err := tvchannel.Validate()
+
+	s.EqualError(err, tvchannels.ErrInvalidRefreshRateSeconds.Error())
+}
+
+func (s *TvChannelTestSuite) TestInvalidSignalBufferSize() {
+	tvchannel := s.completeTvChannel()
+	tvchannel.Signals[0].BufferSize = -1
+
+	err := tvchannel.Validate()
+
+	s.EqualError(err, tvchannels.ErrInvalidBufferSize.Error())
 }
 
 func TestTvChannel(t *testing.T) {

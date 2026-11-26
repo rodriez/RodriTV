@@ -8,9 +8,13 @@ type TvChannelRequest struct {
 	ListPosition int             `json:"listPosition,omitempty"`
 	Status       TVChannelStatus `json:"status,omitempty"`
 	Signals      []struct {
-		URL         string `json:"url,omitempty"`
-		Priority    int    `json:"priority,omitempty"`
-		NeedBrowser bool   `json:"needBrowser,omitempty"`
+		URL                string `json:"url,omitempty"`
+		Priority           int    `json:"priority,omitempty"`
+		NeedBrowser        bool   `json:"needBrowser,omitempty"`
+		NeedRefresh        bool   `json:"needRefresh,omitempty"`
+		RefreshRateSeconds int    `json:"refreshRateSeconds,omitempty"`
+		BufferEnabled      bool   `json:"bufferEnabled,omitempty"`
+		BufferSize         int    `json:"bufferSize,omitempty"`
 	} `json:"signals"`
 }
 
@@ -24,6 +28,10 @@ func (req *TvChannelRequest) ToChannel() TvChannel {
 		signals[i].URL = sig.URL
 		signals[i].Priority = sig.Priority
 		signals[i].NeedBrowser = sig.NeedBrowser
+		signals[i].NeedRefresh = sig.NeedRefresh
+		signals[i].RefreshRateSeconds = sig.RefreshRateSeconds
+		signals[i].BufferEnabled = sig.BufferEnabled
+		signals[i].BufferSize = sig.BufferSize
 	}
 
 	return TvChannel{
@@ -41,9 +49,13 @@ type TvChannelResponse struct {
 	ListPosition int             `json:"listPosition,omitempty"`
 	Status       TVChannelStatus `json:"status,omitempty"`
 	Signals      []struct {
-		URL         string `json:"url,omitempty"`
-		Priority    int    `json:"priority,omitempty"`
-		NeedBrowser bool   `json:"needBrowser,omitempty"`
+		URL                string `json:"url,omitempty"`
+		Priority           int    `json:"priority,omitempty"`
+		NeedBrowser        bool   `json:"needBrowser,omitempty"`
+		NeedRefresh        bool   `json:"needRefresh,omitempty"`
+		RefreshRateSeconds int    `json:"refreshRateSeconds,omitempty"`
+		BufferEnabled      bool   `json:"bufferEnabled,omitempty"`
+		BufferSize         int    `json:"bufferSize,omitempty"`
 	} `json:"signals"`
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 	UpdatedAt time.Time `json:"updatedAt,omitempty"`
@@ -51,9 +63,13 @@ type TvChannelResponse struct {
 
 func toResponse(tvchannel *TvChannel) TvChannelResponse {
 	signals := []struct {
-		URL         string `json:"url,omitempty"`
-		Priority    int    `json:"priority,omitempty"`
-		NeedBrowser bool   `json:"needBrowser,omitempty"`
+		URL                string `json:"url,omitempty"`
+		Priority           int    `json:"priority,omitempty"`
+		NeedBrowser        bool   `json:"needBrowser,omitempty"`
+		NeedRefresh        bool   `json:"needRefresh,omitempty"`
+		RefreshRateSeconds int    `json:"refreshRateSeconds,omitempty"`
+		BufferEnabled      bool   `json:"bufferEnabled,omitempty"`
+		BufferSize         int    `json:"bufferSize,omitempty"`
 	}{}
 
 	for _, sig := range tvchannel.Signals {
@@ -62,13 +78,21 @@ func toResponse(tvchannel *TvChannel) TvChannelResponse {
 		}
 
 		signals = append(signals, struct {
-			URL         string `json:"url,omitempty"`
-			Priority    int    `json:"priority,omitempty"`
-			NeedBrowser bool   `json:"needBrowser,omitempty"`
+			URL                string `json:"url,omitempty"`
+			Priority           int    `json:"priority,omitempty"`
+			NeedBrowser        bool   `json:"needBrowser,omitempty"`
+			NeedRefresh        bool   `json:"needRefresh,omitempty"`
+			RefreshRateSeconds int    `json:"refreshRateSeconds,omitempty"`
+			BufferEnabled      bool   `json:"bufferEnabled,omitempty"`
+			BufferSize         int    `json:"bufferSize,omitempty"`
 		}{
-			URL:         sig.URL,
-			Priority:    sig.Priority,
-			NeedBrowser: sig.NeedBrowser,
+			URL:                sig.URL,
+			Priority:           sig.Priority,
+			NeedBrowser:        sig.NeedBrowser,
+			NeedRefresh:        sig.NeedRefresh,
+			RefreshRateSeconds: sig.RefreshRateSeconds,
+			BufferEnabled:      sig.BufferEnabled,
+			BufferSize:         sig.BufferSize,
 		})
 	}
 

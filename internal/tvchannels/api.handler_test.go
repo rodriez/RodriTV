@@ -29,19 +29,27 @@ func (s *HandlerTestSuite) validAddChannelRequest() tvchannels.TvChannelRequest 
 		Name:         "Telefe",
 		ListPosition: 1,
 		Signals: []struct {
-			URL         string `json:"url,omitempty"`
-			Priority    int    `json:"priority,omitempty"`
-			NeedBrowser bool   `json:"needBrowser,omitempty"`
+			URL                string `json:"url,omitempty"`
+			Priority           int    `json:"priority,omitempty"`
+			NeedBrowser        bool   `json:"needBrowser,omitempty"`
+			NeedRefresh        bool   `json:"needRefresh,omitempty"`
+			RefreshRateSeconds int    `json:"refreshRateSeconds,omitempty"`
+			BufferEnabled      bool   `json:"bufferEnabled,omitempty"`
+			BufferSize         int    `json:"bufferSize,omitempty"`
 		}{
 			{
-				URL:         "https://www.mitelefe.com/telefe-en-vivo",
-				Priority:    1,
-				NeedBrowser: false,
+				URL:                "https://www.mitelefe.com/telefe-en-vivo",
+				Priority:           1,
+				NeedBrowser:        false,
+				NeedRefresh:        true,
+				RefreshRateSeconds: 20,
 			},
 			{
-				URL:         "http://45.134.141.161:2200/ARG/TELEFE_HD/index.m3u8",
-				Priority:    2,
-				NeedBrowser: false,
+				URL:           "http://45.134.141.161:2200/ARG/TELEFE_HD/index.m3u8",
+				Priority:      2,
+				NeedBrowser:   false,
+				BufferEnabled: true,
+				BufferSize:    20,
 			},
 		},
 	}
@@ -55,14 +63,18 @@ func (s *HandlerTestSuite) existingTvChannel() tvchannels.TvChannel {
 		Status:       tvchannels.TVChannelStatusActive,
 		Signals: tvchannels.TvSignalSet{
 			{
-				URL:         "https://www.mitelefe.com/telefe-en-vivo",
-				Priority:    1,
-				NeedBrowser: false,
+				URL:                "https://www.mitelefe.com/telefe-en-vivo",
+				Priority:           1,
+				NeedBrowser:        false,
+				NeedRefresh:        true,
+				RefreshRateSeconds: 20,
 			},
 			{
-				URL:         "http://45.134.141.161:2200/ARG/TELEFE_HD/index.m3u8",
-				Priority:    2,
-				NeedBrowser: false,
+				URL:           "http://45.134.141.161:2200/ARG/TELEFE_HD/index.m3u8",
+				Priority:      2,
+				NeedBrowser:   false,
+				BufferEnabled: true,
+				BufferSize:    20,
 			},
 		},
 		CreatedAt: time.Now(),
